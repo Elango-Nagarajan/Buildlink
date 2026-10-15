@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>BuildConnect – Construction & Property, Bengaluru</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14213d;--mut:#5b6577;--nv:#0b2545;--or:#c8581a;--bd:#d9dee6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1522;--card:#17213a;--tx:#e8ecf4;--mut:#9aa6bd;--nv:#8fb4ff;--or:#f08a4b;--bd:#2a3858}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,sans-serif}
+header{background:#0b2545;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}header b{font-size:20px}header i{color:#f08a4b;font-style:normal}
+header button{background:none;border:1px solid #8fa3c4;color:#fff;border-radius:6px;padding:6px 10px}
+nav{display:flex;overflow-x:auto;gap:4px;background:#0b2545;padding:0 8px 8px}
+nav button{background:none;border:0;color:#cfd8e8;padding:8px 12px;border-radius:6px;white-space:nowrap;font-size:15px}nav button.on{background:#c8581a;color:#fff}
+main{max-width:900px;margin:0 auto;padding:16px}.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px;margin:10px 0}
+h1{font-size:26px;color:var(--nv);margin:8px 0}h2{font-size:19px;color:var(--nv);margin:4px 0 8px}
+input,select,textarea,button.b{font:inherit;padding:10px;border:1px solid var(--bd);border-radius:6px;background:var(--card);color:var(--tx);width:100%;margin:4px 0}
+button.b{background:var(--or);color:#fff;border:0;font-weight:600}button.s{background:var(--nv);color:var(--card)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--bd);margin-right:4px}
+.m{color:var(--mut);font-size:14px}.msg{padding:10px;border-radius:6px;background:var(--bd);margin:8px 0}a{color:var(--or)}footer{text-align:center;padding:20px;color:var(--mut);font-size:13px}
+</style></head><body>
+<header><b>Build<i>Connect</i></b><span id="who"></span></header><nav id="nav"></nav><main id="app">Loading…</main>
+<footer>About · Contact · Help · Privacy · Terms · Safety<br>Listings are user-submitted. Ownership, title and approvals are not verified by BuildConnect.</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const sb=supabase.createClient("https://jjraimfibzbwdeijewmx.supabase.co","sb_publishable_47ZFtH9C9NksZbAkWBQBlA_aAxvj9cL");
+const TR=["Mason","Bar bender","Shuttering carpenter","Electrician","Plumber","Tile layer","Painter","Waterproofing","Welder/fabricator","Carpenter","HVAC","Equipment operator","General helper","Material handler","Concrete helper","Site cleaner","General labour"];
+const PT=["Residential plot","Agricultural land","Independent house","Apartment/flat","Villa","Commercial","Shop/office","Industrial"];
+const WK=["Civil works","Masonry","Reinforcement","Shuttering","Concreting","Plastering","Flooring","Painting","Waterproofing","MEP","Finishing","Renovation/repair"];
+let user=null,admin=false,tab="home",note="",F={},fav=[],busy=false;
+const $=s=>document.querySelector(s),v=id=>$("#"+id).value.trim();
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const opt=a=>a.map(x=>`<option>${x}</option>`).join("");
+const inr=n=>"₹"+Number(n||0).toLocaleString("en-IN");
+async function init(){const{data}=await sb.auth.getSession();user=data.session?.user||null;await after();go("home")}
+async function after(){admin=false;fav=[];if(user){const r=await sb.rpc("is_admin");admin=r.data===true;const f=await sb.from("favourites").select("property_id");fav=(f.data||[]).map(x=>x.property_id)}
+ $("#who").innerHTML=user?`<button onclick="out()">Sign out</button>`:`<button onclick="go('auth')">Sign In</button>`}
+async function out(){await sb.auth.signOut();user=null;await after();go("home")}
+function nav(){const t=[["home","Home"],["workers","Workforce"],["projects","Projects"],["properties","Properties"],["mine","My Account"]];if(admin)t.push(["admin","Admin"]);
+ $("#nav").innerHTML=t.map(x=>`<button class="${tab==x[0]?"on":""}" onclick="go('${x[0]}')">${x[1]}</button>`).join("")}
+async function go(t){tab=t;nav();$("#app").innerHTML="Loading…";let h="";try{h=await({home,auth,workers,projects,properties,mine,admin:adm}[t])()}catch(e){h=`<div class="msg">Something went wrong. Please try again.</div>`}
+ $("#app").innerHTML=(note?`<div class="msg">${esc(note)}</div>`:"")+h;note="";scrollTo(0,0)}
+const need=()=>user?"":`<p class="m"><a href="#" onclick="go('auth');return false">Sign in</a> to post or contact.</p>`;
+async function home(){return`<h1>One Platform. Every Construction Connection.</h1><p>Find skilled construction workers, connect with trusted contractors, manage project requirements and discover property opportunities in one place.</p>
+<div class="row"><button class="b" onclick="go('workers')">Find Workers</button><button class="b" onclick="go('workers')">Find Contractors</button><button class="b s" onclick="go('projects')">Post a Requirement</button><button class="b s" onclick="go('properties')">Explore Properties</button></div>`}
+async function auth(){return`<div class="card"><h2>Sign in or create account</h2><input id="em" type="email" placeholder="Email"><input id="pw" type="password" placeholder="Password (min 8 characters)"><button class="b" onclick="login(0)">Sign In</button><button class="b s" onclick="login(1)">Create Account</button></div>`}
+async function login(sign){const e=v("em"),p=$("#pw").value;if(!e||p.length<8){note="Enter an email and a password of 8+ characters.";return go("auth")}
+ const r=sign?await sb.auth.signUp({email:e,password:p}):await sb.auth.signInWithPassword({email:e,password:p});
+ if(r.error){note=r.error.message;return go("auth")}user=r.data.session?.user||null;if(!user){note="Check your email to confirm, then sign in.";return go("auth")}await after();note="Welcome!";go("home")}
+async function workers(){let q=sb.from("workers").select("*").order("created_at",{ascending:false}).limit(60);
+ if(F.wt)q=q.eq("trade",F.wt);if(F.wl)q=q.ilike("area","%"+F.wl+"%");if(F.wa)q=q.eq("avail","Available now");
+ const{data,error}=await q;if(error)throw error;
+ return`<h2>Workforce & contractors</h2><div class="card"><div class="row"><select onchange="F.wt=this.value;go('workers')"><option value="">All trades</option>${opt(TR)}</select><input placeholder="Area" value="${esc(F.wl)}" onchange="F.wl=this.value;go('workers')"><select onchange="F.wa=this.value;go('workers')"><option value="">Any availability</option><option>Available now</option></select></div></div>
+${data.length?data.map(w=>`<div class="card"><b>${esc(w.name)}</b> <span class="tag">${esc(w.trade)}</span><span class="tag">${esc(w.kind)}</span>${w.status!="approved"?'<span class="tag">pending</span>':""}<br><span class="m">${esc(w.exp)} yrs · ${esc(w.area)} · ${esc(w.avail)} · ${esc(w.pay)} · ${esc(w.lang)}</span>${w.phone&&w.consent?`<br><a target="_blank" rel="noopener" href="https://wa.me/91${esc(w.phone)}">WhatsApp</a>`:""}</div>`).join(""):'<p class="m">No profiles match.</p>'}
+${user?`<div class="card"><h2>Register a profile</h2><input id="wn" placeholder="Name / business name"><select id="wk"><option>Individual</option><option>Team</option><option>Labour supplier</option><option>Subcontractor</option><option>Main contractor</option><option>Builder</option></select><select id="wr">${opt(TR)}</select><input id="we" type="number" min="0" placeholder="Years of experience"><input id="wa" placeholder="Area in Bengaluru"><select id="wv"><option>Available now</option><option>Busy</option></select><input id="wp" placeholder="Daily wage / rate"><input id="wg" placeholder="Languages"><input id="wph" inputmode="numeric" maxlength="10" placeholder="10-digit mobile (optional)"><label class="m"><input type="checkbox" id="wc" style="width:auto"> I consent to show a WhatsApp link</label><button class="b" onclick="addW()">Submit for review</button></div>`:need()}`}
+async function addW(){const ph=v("wph");if(!v("wn")||(ph&&!/^[6-9]\d{9}$/.test(ph))){note="Enter a name and a valid 10-digit mobile.";return go("workers")}
+ const r=await sb.from("workers").insert({name:v("wn"),kind:v("wk"),trade:v("wr"),exp:+v("we")||0,area:v("wa"),avail:v("wv"),pay:v("wp"),lang:v("wg"),phone:ph,consent:$("#wc").checked});
+ note=r.error?"Could not save: "+r.error.message:"Submitted. It appears publicly after admin approval.";go("workers")}
+async function projects(){const{data,error}=await sb.from("projects").select("*").order("created_at",{ascending:false}).limit(60);if(error)throw error;
+ return`<h2>Project requirements</h2>${data.length?data.map(p=>`<div class="card"><b>${esc(p.title)}</b> <span class="tag">${esc(p.cat)}</span>${p.status!="approved"?'<span class="tag">pending</span>':""}<br><span class="m">${esc(p.loc)} · Budget ${esc(p.budget)} · Start ${esc(p.start_date)}</span><p>${esc(p.descr)}</p>${user&&p.owner!=user.id?`<input id="q${p.id}" placeholder="Your private quotation"><button class="b s" onclick="enq('${p.id}','project')">Send quotation</button>`:""}</div>`).join(""):'<p class="m">No open requirements yet.</p>'}
+${user?`<div class="card"><h2>Post a requirement</h2><input id="pt" placeholder="Title"><select id="pc">${opt(WK)}</select><input id="pl" placeholder="Location"><input id="pb" placeholder="Expected budget (₹)"><label class="m">Required start date</label><input id="ps" type="date"><textarea id="pd" rows="3" placeholder="Scope and approximate area"></textarea><button class="b" onclick="addP()">Submit for review</button></div>`:need()}`}
+async function addP(){if(!v("pt")){note="Title is required.";return go("projects")}
+ const r=await sb.from("projects").insert({title:v("pt"),cat:v("pc"),loc:v("pl"),budget:v("pb"),start_date:v("ps")||null,descr:v("pd")});note=r.error?"Could not save: "+r.error.message:"Submitted for review.";go("projects")}
+async function properties(){let q=sb.from("properties").select("*").order("created_at",{ascending:false}).limit(60);
+ if(F.pm)q=q.eq("mode",F.pm);if(F.pt)q=q.eq("type",F.pt);if(F.pl)q=q.ilike("locality","%"+F.pl+"%");if(F.px)q=q.lte("price",+F.px);if(F.pb)q=q.gte("beds",+F.pb);
+ const{data,error}=await q;if(error)throw error;
+ return`<h2>Properties</h2><div class="card"><div class="row"><select onchange="F.pm=this.value;go('properties')"><option value="">Sale/Rent/Lease</option><option>Sale</option><option>Rent</option><option>Lease</option></select><select onchange="F.pt=this.value;go('properties')"><option value="">All types</option>${opt(PT)}</select><input placeholder="Locality" value="${esc(F.pl)}" onchange="F.pl=this.value;go('properties')"><input type="number" placeholder="Max price ₹" value="${esc(F.px)}" onchange="F.px=this.value;go('properties')"><input type="number" placeholder="Min bedrooms" value="${esc(F.pb)}" onchange="F.pb=this.value;go('properties')"></div></div>
+${data.length?data.map(p=>`<div class="card"><b>${esc(p.title)}</b> <span class="tag">${esc(p.mode)}</span><span class="tag">${esc(p.type)}</span><span class="tag">${esc(p.listed_by)}</span>${p.status!="approved"?'<span class="tag">pending</span>':""}<br><b>${inr(p.price)}</b> <span class="m">· ${esc(p.locality)} ${esc(p.pin)} · ${esc(p.area)} ${esc(p.unit)} · ${p.beds||0} bed</span><p>${esc(p.descr)}</p><span class="m">Ownership and legal status not verified.</span>
+${user?`<button class="b s" onclick="tfav('${p.id}')">${fav.includes(p.id)?"★ Saved":"☆ Save"}</button><input id="q${p.id}" placeholder="Your enquiry message"><button class="b" onclick="enq('${p.id}','property')">Send enquiry</button><button class="b s" onclick="rep('${p.id}')">Report listing</button>`:""}</div>`).join(""):'<p class="m">No properties match.</p>'}
+${user?`<div class="card"><h2>Post a listing</h2><input id="lt" placeholder="Title"><div class="row"><select id="lm"><option>Sale</option><option>Rent</option><option>Lease</option></select><select id="ly">${opt(PT)}</select><select id="lb"><option>Owner</option><option>Broker</option></select></div><input id="lp" type="number" placeholder="Price or monthly rent (₹)"><input id="ll" placeholder="Locality"><input id="lpin" maxlength="6" placeholder="PIN code"><div class="row"><input id="la" type="number" placeholder="Area"><select id="lu"><option>sq ft</option><option>sq yd</option><option>sq m</option><option>acres</option></select><input id="lbd" type="number" placeholder="Bedrooms"></div><textarea id="ld" rows="3" placeholder="Description, amenities"></textarea><button class="b" onclick="addL()">Submit for review</button></div>`:need()}`}
+async function addL(){const pin=v("lpin");if(!v("lt")||!+v("lp")||(pin&&!/^\d{6}$/.test(pin))){note="Title, price and a valid 6-digit PIN are needed.";return go("properties")}
+ const r=await sb.from("properties").insert({title:v("lt"),mode:v("lm"),type:v("ly"),listed_by:v("lb"),price:+v("lp"),locality:v("ll"),pin,area:+v("la")||null,unit:v("lu"),beds:+v("lbd")||null,descr:v("ld")});
+ note=r.error?(r.error.code=="23505"?"Duplicate listing: you already posted this.":"Could not save: "+r.error.message):"Listing submitted for review.";go("properties")}
+async function tfav(id){fav.includes(id)?await sb.from("favourites").delete().eq("property_id",id):await sb.from("favourites").insert({property_id:id});await after();go("properties")}
+async function enq(id,kind){const m=v("q"+id);if(!m)return;const r=await sb.from("enquiries").insert({kind,target:id,msg:m});note=r.error?"Could not send.":"Sent. Only you, the poster and the admin can read it.";go(tab)}
+async function rep(id){const r=await sb.from("reports").insert({property_id:id});note=r.error?"Could not report.":"Reported to admin.";go(tab)}
+async function mine(){if(!user)return await auth();const[w,p,j,e]=await Promise.all(["workers","properties","projects"].map(t=>sb.from(t).select("*").eq("owner",user.id)).concat(sb.from("enquiries").select("*").order("created_at",{ascending:false})));
+ const L=[...(w.data||[]).map(x=>["workers",x.id,x.name,x.status]),...(p.data||[]).map(x=>["properties",x.id,x.title,x.status]),...(j.data||[]).map(x=>["projects",x.id,x.title,x.status])];
+ return`<h2>My account</h2><p class="m">${esc(user.email)}</p><div class="card"><b>My listings</b>${L.map(x=>`<p>${esc(x[2])} <span class="tag">${x[3]}</span> <a href="#" onclick="del('${x[0]}','${x[1]}');return false">delete</a></p>`).join("")||'<p class="m">None yet.</p>'}</div><div class="card"><b>Enquiries & quotations</b>${(e.data||[]).map(x=>`<p class="m">${x.sender==user.id?"You sent":"Received"}: ${esc(x.msg)}</p>`).join("")||'<p class="m">None.</p>'}</div>`}
+async function del(t,id){if(!confirm("Delete this?"))return;await sb.from(t).delete().eq("id",id);go(tab)}
+async function adm(){if(!admin)return"<p>Admin only.</p>";const[a,b,c,r]=await Promise.all(["workers","properties","projects"].map(t=>sb.from(t).select("*").eq("status","pending")).concat(sb.from("reports").select("*")));
+ const P=[...(a.data||[]).map(x=>["workers",x]),...(b.data||[]).map(x=>["properties",x]),...(c.data||[]).map(x=>["projects",x])];
+ return`<h2>Moderation</h2>${P.map(([t,x])=>`<div class="card"><span class="tag">${t}</span> ${esc(x.title||x.name)}<br><button class="b" onclick="st('${t}','${x.id}')">Approve</button><button class="b s" onclick="del('${t}','${x.id}')">Reject & delete</button></div>`).join("")||'<p class="m">Nothing pending.</p>'}<h2>Reports (${(r.data||[]).length})</h2>${(r.data||[]).map(x=>`<div class="card m">Listing ${esc(x.property_id)} <a href="#" onclick="del('reports','${x.id}');return false">dismiss</a> · <a href="#" onclick="del('properties','${x.property_id}');return false">remove listing</a></div>`).join("")}`}
+async function st(t,id){await sb.from(t).update({status:"approved"}).eq("id",id);go("admin")}
+init();
+</script></body></html>
